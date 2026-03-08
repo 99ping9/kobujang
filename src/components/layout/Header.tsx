@@ -14,8 +14,7 @@ const Header = () => {
                 <div className="flex justify-between h-16 items-center">
                     <div className="flex items-center gap-2">
                         <Link to="/dashboard" className="text-xl font-bold flex items-center gap-1">
-                            <span>?뮑</span>
-                            <span className="bg-gradient-to-r from-sky-600 to-blue-700 bg-clip-text text-transparent">?곗븷???좎옱?</span>
+                            <span className="bg-gradient-to-r from-sky-600 to-blue-700 bg-clip-text text-transparent">코부장 저널링</span>
                         </Link>
                     </div>
 
