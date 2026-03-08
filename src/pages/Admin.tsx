@@ -9,7 +9,6 @@ interface AdminJournal {
     date: string
     type: string
     link: string
-    amount: number | null
     created_at: string
     kbj_users: {
         username: string
@@ -34,7 +33,6 @@ const Admin = () => {
                     date,
                     type,
                     link,
-                    amount,
                     created_at,
                     kbj_users (
                         username
@@ -120,11 +118,7 @@ const Admin = () => {
                                         {format(new Date(journal.date), 'MMMM d, yyyy')}
                                     </td>
                                     <td className="px-6 py-4 text-gray-400 text-xs">
-                                        {journal.type === 'account' ? (
-                                            <span className="text-slate-900 font-bold">₩{journal.amount?.toLocaleString()}</span>
-                                        ) : (
-                                            <span className="truncate max-w-[150px] inline-block">{journal.link}</span>
-                                        )}
+                                        <span className="truncate max-w-[150px] inline-block">{journal.link}</span>
                                     </td>
                                     <td className="px-6 py-4 text-right">
                                         {journal.type !== 'account' && journal.link && journal.link !== 'completed' && (

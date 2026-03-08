@@ -21,7 +21,7 @@ const Dashboard = () => {
     const isViewingSelf = user?.id === viewedUser?.id
 
     const [submissions, setSubmissions] = useState<Record<string, SubmissionType[]>>({})
-    const [submissionDetails, setSubmissionDetails] = useState<Record<string, Record<string, { link: string, amount: number | null }>>>({})
+    const [submissionDetails, setSubmissionDetails] = useState<Record<string, Record<string, { link: string }>>>({})
     const [communityStatus, setCommunityStatus] = useState<{
         id: string, username: string, hasSubmittedToday: boolean,
         avatar?: string, bg_color?: string, dream_days?: number,
@@ -76,19 +76,19 @@ const Dashboard = () => {
         if (!userId) return
         const { data: journals, error } = await supabase
             .from('kbj_journals')
-            .select('date, type, link, amount')
+            .select('date, type, link')
             .eq('user_id', userId)
 
         if (error) { console.error('Error fetching submissions:', error); return }
 
         const subMap: Record<string, SubmissionType[]> = {}
-        const detailMap: Record<string, Record<string, { link: string, amount: number | null }>> = {}
+        const detailMap: Record<string, Record<string, { link: string }>> = {}
         journals?.forEach(j => {
             const dateKey = j.date
             if (!subMap[dateKey]) subMap[dateKey] = []
             subMap[dateKey].push(j.type as SubmissionType)
             if (!detailMap[dateKey]) detailMap[dateKey] = {}
-            detailMap[dateKey][j.type] = { link: j.link || '', amount: j.amount ?? null }
+            detailMap[dateKey][j.type] = { link: j.link || '' }
         })
         setSubmissions(subMap)
         setSubmissionDetails(detailMap)
@@ -213,8 +213,7 @@ const Dashboard = () => {
                 user_id: targetUserId,
                 date: dateStr,
                 type: data.type,
-                link: data.link?.trim() || 'completed',
-                amount: null
+                link: data.link?.trim() || 'completed'
             }
 
             const isNew = !(submissions[dateStr] || []).includes(data.type)

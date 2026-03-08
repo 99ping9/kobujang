@@ -9,7 +9,7 @@ interface SubmissionModalProps {
     date: Date
     onSubmit: (data: { link: string, type: SubmissionType, amount?: number }) => Promise<void>
     submittedTypes: SubmissionType[]
-    existingData: Record<string, { link: string, amount: number | null }>
+    existingData: Record<string, { link: string }>
     defaultType?: SubmissionType
     isAdminViewing?: boolean
 }
