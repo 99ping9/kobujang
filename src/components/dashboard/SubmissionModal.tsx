@@ -33,12 +33,12 @@ const SubmissionModal = ({ isOpen, onClose, date, onSubmit, submittedTypes, exis
 
     useEffect(() => {
         if (isOpen) {
-            const startType = defaultType || 'journal'
+            const startType = defaultType || 'item1'
             setSelectedType(startType)
             setIsSubmitting(false)
             prefillForType(startType)
         }
-    }, [isOpen])
+    }, [isOpen, defaultType])
 
     if (!isOpen) return null
 
@@ -68,14 +68,14 @@ const SubmissionModal = ({ isOpen, onClose, date, onSubmit, submittedTypes, exis
                 <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-slate-50/50 shrink-0">
                     <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
                         <CalendarIcon className="w-5 h-5 text-blue-500" />
-                        {isAdminViewing ? '湲곕줉 蹂닿린' : '湲곕줉?섍린'} <span className="text-slate-400 text-sm font-normal">| {format(date, 'MM.dd')}</span>
+                        {isAdminViewing ? '기록 보기' : '기록하기'} <span className="text-slate-400 text-sm font-normal">| {format(date, 'MM.dd')}</span>
                     </h3>
                     <button onClick={onClose} className="p-1 rounded-full hover:bg-slate-200 transition-colors text-slate-500">
                         <X className="w-5 h-5" />
                     </button>
                 </div>
 
-                {/* ????좏깮 ??*/}
+                {/* 항목 선택 탭 */}
                 <div className="p-4 bg-white border-b border-slate-100 shrink-0">
                     <div className="flex gap-2">
                         {SUBMISSION_TYPES.map(type => {
@@ -84,6 +84,7 @@ const SubmissionModal = ({ isOpen, onClose, date, onSubmit, submittedTypes, exis
                             return (
                                 <button
                                     key={type.id}
+                                    type="button"
                                     onClick={() => { setSelectedType(type.id); prefillForType(type.id) }}
                                     className={`px-4 py-2 rounded-xl text-sm font-bold transition-all border flex items-center gap-1.5 ${isSelected
                                         ? 'bg-blue-600 text-white border-blue-600 shadow-md ring-2 ring-blue-200'
@@ -108,20 +109,20 @@ const SubmissionModal = ({ isOpen, onClose, date, onSubmit, submittedTypes, exis
                                 onClick={() => setMethod('link')}
                                 className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all ${method === 'link' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500'}`}
                             >
-                                留곹겕濡??몄쬆
+                                링크로 인증
                             </button>
                             <button
                                 type="button"
                                 onClick={() => setMethod('check')}
                                 className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all ${method === 'check' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500'}`}
                             >
-                                洹몃깷 泥댄겕?섍린
+                                그냥 체크하기
                             </button>
                         </div>
 
                         {method === 'link' ? (
                             <div className="space-y-2 animate-in fade-in slide-in-from-top-1">
-                                <label className="text-sm font-semibold text-slate-700">?몄쬆 留곹겕 (URL)</label>
+                                <label className="text-sm font-semibold text-slate-700">인증 링크 (URL)</label>
                                 <div className="relative">
                                     <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                                     <input
@@ -139,7 +140,7 @@ const SubmissionModal = ({ isOpen, onClose, date, onSubmit, submittedTypes, exis
                         ) : (
                             <div className="py-8 text-center bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200 animate-in fade-in slide-in-from-bottom-1">
                                 <CheckCircle className="w-12 h-12 text-blue-500 mx-auto mb-3 opacity-50" />
-                                <p className="text-slate-500 font-medium">?꾨즺 泥댄겕留?吏꾪뻾?⑸땲??</p>
+                                <p className="text-slate-500 font-medium">완료 체크만 진행합니다.</p>
                             </div>
                         )}
 
@@ -150,7 +151,7 @@ const SubmissionModal = ({ isOpen, onClose, date, onSubmit, submittedTypes, exis
                                     disabled={isSubmitting}
                                     className="w-full py-3.5 bg-slate-900 text-white font-bold rounded-xl hover:bg-slate-800 transition-all flex items-center justify-center gap-2 shadow-lg hover:shadow-xl hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
-                                    {isSubmitting ? '???以?..' : isSubmitted ? '?섏젙?섍린 ?륅툘' : '湲곕줉?섍린'} <Send className="w-4 h-4" />
+                                    {isSubmitting ? '저장 중...' : isSubmitted ? '수정하기' : '기록하기'} <Send className="w-4 h-4" />
                                 </button>
                             </div>
                         )}
