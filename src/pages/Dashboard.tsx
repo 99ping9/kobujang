@@ -173,13 +173,13 @@ const Dashboard = () => {
         setIsModalOpen(true)
     }
 
-    const handleSubmit = async (data: { types: SubmissionType[] }) => {
+    const handleSubmit = async (data: { typesToAdd: SubmissionType[], typesToRemove: SubmissionType[] }) => {
         if (!user) return
         const targetUserId = (isAdminMode && viewedUser) ? viewedUser.id : user.id
         const dateStr = format(selectedDate, 'yyyy-MM-dd')
 
         try {
-            const promises = data.types.map(async (type) => {
+            const addPromises = data.typesToAdd.map(async (type) => {
                 const payload = {
                     user_id: targetUserId,
                     date: dateStr,
@@ -189,16 +189,34 @@ const Dashboard = () => {
                 const { error } = await supabase
                     .from('kbj_journals')
                     .upsert([payload], { onConflict: 'user_id,date,type' })
-                if (error) throw new Error(`제출 실패: ${error.message}`)
+                if (error) throw new Error(`추가 실패: ${error.message}`)
             })
 
-            await Promise.all(promises)
+            const removePromises = data.typesToRemove.map(async (type) => {
+                const { error } = await supabase
+                    .from('kbj_journals')
+                    .delete()
+                    .eq('user_id', targetUserId)
+                    .eq('date', dateStr)
+                    .eq('type', type)
+                if (error) throw new Error(`취소 실패: ${error.message}`)
+            })
 
-            // 100% completion is now 2 items
-            const dailySubsAfter = Array.from(new Set([...(submissions[dateStr] || []), ...data.types]))
-            const isNew100Percent = dailySubsAfter.length === 2 && (submissions[dateStr] || []).length < 2
+            await Promise.all([...addPromises, ...removePromises])
 
-            if (isNew100Percent) {
+            const oldSubs = submissions[dateStr] || []
+            let newSubs = oldSubs.filter(t => !data.typesToRemove.includes(t))
+            newSubs = Array.from(new Set([...newSubs, ...data.typesToAdd]))
+
+            const was100Percent = oldSubs.length >= 2
+            const isNow100Percent = newSubs.length >= 2
+
+            if (was100Percent && !isNow100Percent) {
+                const currentDays = viewedUser?.dream_days ?? 0
+                await supabase.from('kbj_users')
+                    .update({ dream_days: Math.max(0, currentDays - 1) })
+                    .eq('id', targetUserId)
+            } else if (!was100Percent && isNow100Percent) {
                 const currentDays = viewedUser?.dream_days ?? 0
                 await supabase.from('kbj_users')
                     .update({ dream_days: currentDays + 1 })

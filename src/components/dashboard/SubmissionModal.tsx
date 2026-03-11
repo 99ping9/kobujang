@@ -1,5 +1,5 @@
 ﻿import React, { useState, useEffect } from 'react'
-import { X, Send, Calendar as CalendarIcon, CheckCircle, Square, CheckSquare } from 'lucide-react'
+import { X, Send, Calendar as CalendarIcon, Square, CheckSquare } from 'lucide-react'
 import { format } from 'date-fns'
 import { SubmissionType, SUBMISSION_TYPES } from '@/types'
 
@@ -7,7 +7,7 @@ interface SubmissionModalProps {
     isOpen: boolean
     onClose: () => void
     date: Date
-    onSubmit: (data: { types: SubmissionType[] }) => Promise<void>
+    onSubmit: (data: { typesToAdd: SubmissionType[], typesToRemove: SubmissionType[] }) => Promise<void>
     submittedTypes: SubmissionType[]
     defaultType?: SubmissionType
     isAdminViewing?: boolean
@@ -19,7 +19,11 @@ const SubmissionModal = ({ isOpen, onClose, date, onSubmit, submittedTypes, defa
 
     useEffect(() => {
         if (isOpen) {
-            setSelectedTypes(defaultType && !submittedTypes.includes(defaultType) ? [defaultType] : [])
+            const initialTypes = [...submittedTypes]
+            if (defaultType && !initialTypes.includes(defaultType)) {
+                initialTypes.push(defaultType)
+            }
+            setSelectedTypes(initialTypes)
             setIsSubmitting(false)
         }
     }, [isOpen, defaultType, submittedTypes])
@@ -29,14 +33,16 @@ const SubmissionModal = ({ isOpen, onClose, date, onSubmit, submittedTypes, defa
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
 
-        const newTypes = selectedTypes.filter(t => !submittedTypes.includes(t))
-        if (newTypes.length === 0) {
+        const typesToAdd = selectedTypes.filter(t => !submittedTypes.includes(t))
+        const typesToRemove = submittedTypes.filter(t => !selectedTypes.includes(t))
+
+        if (typesToAdd.length === 0 && typesToRemove.length === 0) {
             onClose()
             return
         }
 
         setIsSubmitting(true)
-        await onSubmit({ types: newTypes })
+        await onSubmit({ typesToAdd, typesToRemove })
         setIsSubmitting(false)
         onClose()
     }
@@ -58,7 +64,6 @@ const SubmissionModal = ({ isOpen, onClose, date, onSubmit, submittedTypes, defa
                     <form onSubmit={handleSubmit} className="space-y-6">
                         <div className="flex flex-col gap-3">
                             {SUBMISSION_TYPES.map(type => {
-                                const isDone = submittedTypes.includes(type.id)
                                 const isSelected = selectedTypes.includes(type.id)
 
                                 return (
@@ -66,24 +71,20 @@ const SubmissionModal = ({ isOpen, onClose, date, onSubmit, submittedTypes, defa
                                         key={type.id}
                                         type="button"
                                         onClick={() => {
-                                            if (isDone || isAdminViewing) return
+                                            if (isAdminViewing) return
                                             setSelectedTypes(prev =>
                                                 prev.includes(type.id)
                                                     ? prev.filter(t => t !== type.id)
                                                     : [...prev, type.id]
                                             )
                                         }}
-                                        className={`w-full p-4 rounded-xl border-2 transition-all flex items-center gap-3 ${isDone
-                                            ? 'bg-slate-50 border-slate-200 cursor-default opacity-70'
-                                            : isSelected
-                                                ? 'bg-blue-50 border-blue-500 text-blue-700 shadow-md ring-2 ring-blue-500/20'
-                                                : 'bg-white border-slate-200 hover:border-blue-300 text-slate-700'
+                                        className={`w-full p-4 rounded-xl border-2 transition-all flex items-center gap-3 ${isSelected
+                                            ? 'bg-blue-50 border-blue-500 text-blue-700 shadow-md ring-2 ring-blue-500/20'
+                                            : 'bg-white border-slate-200 hover:border-blue-300 text-slate-700'
                                             }`}
-                                        disabled={isDone || isAdminViewing}
+                                        disabled={isAdminViewing}
                                     >
-                                        {isDone ? (
-                                            <CheckCircle className="w-6 h-6 text-green-500" />
-                                        ) : isSelected ? (
+                                        {isSelected ? (
                                             <CheckSquare className="w-6 h-6 text-blue-500" />
                                         ) : (
                                             <Square className="w-6 h-6 text-slate-400" />
@@ -91,7 +92,6 @@ const SubmissionModal = ({ isOpen, onClose, date, onSubmit, submittedTypes, defa
                                         <div className="flex-1 text-left">
                                             <span className="font-bold">{type.label}</span>
                                         </div>
-                                        {isDone && <span className="text-xs font-bold text-green-600 bg-green-100 px-2 py-1 rounded-md">완료됨</span>}
                                     </button>
                                 )
                             })}
@@ -101,10 +101,13 @@ const SubmissionModal = ({ isOpen, onClose, date, onSubmit, submittedTypes, defa
                             <div className="pt-2">
                                 <button
                                     type="submit"
-                                    disabled={isSubmitting || selectedTypes.filter(t => !submittedTypes.includes(t)).length === 0}
+                                    disabled={isSubmitting || (
+                                        selectedTypes.filter(t => !submittedTypes.includes(t)).length === 0 &&
+                                        submittedTypes.filter(t => !selectedTypes.includes(t)).length === 0
+                                    )}
                                     className="w-full py-3.5 bg-slate-900 text-white font-bold rounded-xl hover:bg-slate-800 transition-all flex items-center justify-center gap-2 shadow-lg hover:shadow-xl hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
-                                    {isSubmitting ? '저장 중...' : '선택 항목 제출하기'} <Send className="w-4 h-4" />
+                                    {isSubmitting ? '저장 중...' : '변경사항 저장하기'} <Send className="w-4 h-4" />
                                 </button>
                             </div>
                         )}
