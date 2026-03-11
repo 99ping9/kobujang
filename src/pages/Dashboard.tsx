@@ -21,7 +21,7 @@ const Dashboard = () => {
     const isViewingSelf = user?.id === viewedUser?.id
 
     const [submissions, setSubmissions] = useState<Record<string, SubmissionType[]>>({})
-    const [submissionDetails, setSubmissionDetails] = useState<Record<string, Record<string, { link: string }>>>({})
+
     const [communityStatus, setCommunityStatus] = useState<{
         id: string, username: string, hasSubmittedToday: boolean,
         avatar?: string, bg_color?: string, dream_days?: number,
@@ -82,16 +82,12 @@ const Dashboard = () => {
         if (error) { console.error('Error fetching submissions:', error); return }
 
         const subMap: Record<string, SubmissionType[]> = {}
-        const detailMap: Record<string, Record<string, { link: string }>> = {}
         journals?.forEach(j => {
             const dateKey = j.date
             if (!subMap[dateKey]) subMap[dateKey] = []
             subMap[dateKey].push(j.type as SubmissionType)
-            if (!detailMap[dateKey]) detailMap[dateKey] = {}
-            detailMap[dateKey][j.type] = { link: j.link || '' }
         })
         setSubmissions(subMap)
-        setSubmissionDetails(detailMap)
     }
 
     const fetchData = async () => {
@@ -177,55 +173,32 @@ const Dashboard = () => {
         setIsModalOpen(true)
     }
 
-    const handleSubmit = async (data: { link: string, type: SubmissionType, amount?: number }) => {
+    const handleSubmit = async (data: { types: SubmissionType[] }) => {
         if (!user) return
         const targetUserId = (isAdminMode && viewedUser) ? viewedUser.id : user.id
         const dateStr = format(selectedDate, 'yyyy-MM-dd')
 
         try {
-            if (data.link === 'unchecked') {
-                const wasSubmitted = (submissions[dateStr] || []).includes(data.type)
-
+            const promises = data.types.map(async (type) => {
+                const payload = {
+                    user_id: targetUserId,
+                    date: dateStr,
+                    type: type,
+                    link: 'completed'
+                }
                 const { error } = await supabase
                     .from('kbj_journals')
-                    .delete()
-                    .eq('user_id', targetUserId)
-                    .eq('date', dateStr)
-                    .eq('type', data.type)
-                if (error) { alert(`삭제 실패: ${error.message}`); return }
+                    .upsert([payload], { onConflict: 'user_id,date,type' })
+                if (error) throw new Error(`제출 실패: ${error.message}`)
+            })
 
-                if (wasSubmitted) {
-                    const dailySubs = submissions[dateStr] || []
-                    if (dailySubs.length === 3) {
-                        const currentDays = viewedUser?.dream_days ?? 0
-                        await supabase.from('kbj_users')
-                            .update({ dream_days: Math.max(0, currentDays - 1) })
-                            .eq('id', targetUserId)
-                    }
-                }
+            await Promise.all(promises)
 
-                await fetchData()
-                await fetchUserSubmissions(targetUserId)
-                return
-            }
+            // 100% completion is now 2 items
+            const dailySubsAfter = Array.from(new Set([...(submissions[dateStr] || []), ...data.types]))
+            const isNew100Percent = dailySubsAfter.length === 2 && (submissions[dateStr] || []).length < 2
 
-            const payload = {
-                user_id: targetUserId,
-                date: dateStr,
-                type: data.type,
-                link: data.link?.trim() || 'completed'
-            }
-
-            const isNew = !(submissions[dateStr] || []).includes(data.type)
-
-            const { error } = await supabase
-                .from('kbj_journals')
-                .upsert([payload], { onConflict: 'user_id,date,type' })
-
-            if (error) { alert(`제출 실패: ${error.message}`); return }
-
-            const dailySubsAfter = [...(submissions[dateStr] || []).filter(t => t !== data.type), data.type]
-            if (isNew && dailySubsAfter.length === 3) {
+            if (isNew100Percent) {
                 const currentDays = viewedUser?.dream_days ?? 0
                 await supabase.from('kbj_users')
                     .update({ dream_days: currentDays + 1 })
@@ -234,9 +207,9 @@ const Dashboard = () => {
 
             await fetchData()
             await fetchUserSubmissions(targetUserId)
-        } catch (err) {
+        } catch (err: any) {
             console.error('Unexpected error:', err)
-            alert('예상치 못한 오류가 발생했습니다.')
+            alert(err.message || '예상치 못한 오류가 발생했습니다.')
         }
     }
 
@@ -438,7 +411,6 @@ const Dashboard = () => {
                 date={selectedDate}
                 onSubmit={handleSubmit}
                 submittedTypes={submissions[format(selectedDate, 'yyyy-MM-dd')] || []}
-                existingData={submissionDetails[format(selectedDate, 'yyyy-MM-dd')] || {}}
                 defaultType={selectedDefaultType}
                 isAdminViewing={false}
             />

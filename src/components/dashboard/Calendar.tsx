@@ -98,7 +98,7 @@ const Calendar = ({ submissions, onDateClick, currentDate, isAdminMode = false }
                         const isCurrentMonth = isSameMonth(day, monthStart)
                         const holidayName = HOLIDAYS_2026[dateKey]
                         const isHoliday = !!holidayName
-                        const requiredCount = 3
+                        const requiredCount = 2
                         const isAllDone = subCount >= requiredCount
                         const isBeforeStart = isBefore(day, PROGRAM_START_DATE)
                         const today = new Date()

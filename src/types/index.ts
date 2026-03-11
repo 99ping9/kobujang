@@ -8,7 +8,7 @@
     created_at?: string;
 }
 
-export type SubmissionType = 'item1' | 'item2' | 'item3';
+export type SubmissionType = 'item1' | 'item2';
 
 export interface DailySubmission {
     id: string;
@@ -22,7 +22,6 @@ export interface DailySubmission {
 }
 
 export const SUBMISSION_TYPES: { id: SubmissionType; label: string; icon?: string }[] = [
-    { id: 'item1', label: '항목 1' },
-    { id: 'item2', label: '항목 2' },
-    { id: 'item3', label: '항목 3' },
+    { id: 'item1', label: '세줄글쓰기' },
+    { id: 'item2', label: '미션 글쓰기' },
 ];
